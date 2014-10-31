@@ -64,6 +64,7 @@ Obsoletes:  qubes-core-proxyvm
 Obsoletes:  qubes-upgrade-vm < 2.0
 BuildRequires: xen-devel
 BuildRequires: qubes-utils-devel >= 2.0.5
+BuildRequires: pam-devel
 
 %define _builddir %(pwd)
 
@@ -302,6 +303,7 @@ rm -f %{name}-%{version}
 /etc/dispvm-dotfiles.tbz
 /etc/dhclient.d/qubes-setup-dnat-to-ns.sh
 /etc/fstab
+/etc/pam.d/qrexec
 /etc/pki/rpm-gpg/RPM-GPG-KEY-qubes*
 %config(noreplace) /etc/polkit-1/localauthority/50-local.d/qubes-allow-all.pkla
 %config(noreplace) /etc/polkit-1/rules.d/00-qubes-allow-all.rules

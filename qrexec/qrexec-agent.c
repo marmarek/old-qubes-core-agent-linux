@@ -19,6 +19,8 @@
  *
  */
 
+#define HAVE_PAM
+
 #include <sys/select.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +33,9 @@
 #include <pwd.h>
 #include <grp.h>
 #include <sys/stat.h>
+#ifdef HAVE_PAM
+#include <security/pam_appl.h>
+#endif
 #include "qrexec.h"
 #include "libqrexec-utils.h"
 
@@ -123,10 +128,49 @@ void no_colon_in_cmd()
 	exit(1);
 }
 
+#ifdef HAVE_PAM
+int pam_conv_callback(int num_msg, const struct pam_message **msg,
+		struct pam_response **resp, void *appdata_ptr __attribute__((__unused__)))
+{
+	int i;
+	struct pam_response *resp_array = 
+		calloc(sizeof(struct pam_response), num_msg);
+
+	if (resp_array == NULL)
+		return PAM_BUF_ERR;
+
+	for (i=0; i<num_msg; i++) {
+		if (msg[i]->msg_style == PAM_ERROR_MSG)
+			fprintf(stderr, "%s", msg[i]->msg);
+		if (msg[i]->msg_style == PAM_PROMPT_ECHO_OFF ||
+				msg[i]->msg_style == PAM_PROMPT_ECHO_ON) {
+		resp_array[i].resp = strdup("");
+		resp_array[i].resp_retcode = 0;
+		}
+	}
+	*resp = resp_array;
+	return PAM_SUCCESS;
+}
+
+static struct pam_conv conv = {
+	pam_conv_callback,
+	NULL
+};
+#endif
+
 void do_exec(const char *cmd)
 {
 	char buf[strlen(QUBES_RPC_MULTIPLEXER_PATH) + strlen(cmd) - strlen(QUBES_RPC_MAGIC_CMD) + 1];
 	char *realcmd = index(cmd, ':'), *user;
+#ifdef HAVE_PAM
+	int retval, status;
+	pam_handle_t *pamh=NULL;
+	struct passwd *pw;
+	struct passwd pw_copy;
+	pid_t child, pid;
+	char **env;
+#endif
+
 	if (!realcmd)
 		no_colon_in_cmd();
 	/* mark end of username and move to command */
@@ -144,9 +188,100 @@ void do_exec(const char *cmd)
 	signal(SIGCHLD, SIG_DFL);
 	signal(SIGPIPE, SIG_DFL);
 
+#ifdef HAVE_PAM
+	pw = getpwnam (user);
+	if (! (pw && pw->pw_name && pw->pw_name[0] && pw->pw_dir && pw->pw_dir[0]
+				&& pw->pw_passwd))
+		fprintf(stderr, "user %s does not exist", user);
+
+	/* Make a copy of the password information and point pw at the local
+	 * copy instead.  Otherwise, some systems (e.g. Linux) would clobber
+	 * the static data through the getlogin call.
+	 */
+	pw_copy = *pw;
+	pw = &pw_copy;
+	pw->pw_name = strdup (pw->pw_name);
+	pw->pw_passwd = strdup (pw->pw_passwd);
+	pw->pw_dir = strdup (pw->pw_dir);
+	pw->pw_shell = strdup (pw->pw_shell);
+	endpwent();
+
+	retval = pam_start("qrexec", user, &conv, &pamh);
+	if (retval != PAM_SUCCESS)
+		goto error;
+
+	retval = pam_authenticate(pamh, 0);
+	if (retval != PAM_SUCCESS)
+		goto error;
+
+	retval = initgroups (pw->pw_name, pw->pw_gid);
+	if (retval == -1) {
+		perror("initgroups");
+		goto error;
+	}
+
+	retval = pam_setcred (pamh, PAM_ESTABLISH_CRED);
+	if (retval != PAM_SUCCESS)
+		goto error;
+
+	retval = pam_open_session (pamh, 0);
+	if (retval != PAM_SUCCESS)
+		goto error;
+
+	/* FORK HERE */
+	child = fork ();
+
+	switch (child) {
+		case -1:
+			goto error;
+		case 0:
+			/* child */
+			if (setgid (pw->pw_gid))
+				exit(126);
+			if (setuid (pw->pw_uid))
+				exit(126);
+			setsid();
+			/* This is a copy but don't care to free as we exec later anyways.  */
+			env = pam_getenvlist (pamh);
+			execle("/bin/sh", "sh", "-c", realcmd, (char*)NULL, env);
+			exit(127);
+		default:
+			/* parent */
+			/* close std*, so when child process closes them, qrexec-agent will receive EOF */
+			/* this is the main purpose of this reimplementation of /bin/su... */
+			close(0);
+			close(1);
+			close(2);
+	}
+
+	/* reachable only in parent */
+	pid = waitpid (child, &status, 0);
+	if (pid != (pid_t)-1) {
+		if (WIFSIGNALED (status))
+			status = WTERMSIG (status) + 128;
+		else
+			status = WEXITSTATUS (status);
+	} else
+		status = 1;
+	
+	retval = pam_close_session (pamh, 0);
+
+	retval = pam_setcred (pamh, PAM_DELETE_CRED | PAM_SILENT);
+
+	if (pam_end(pamh, retval) != PAM_SUCCESS) {     /* close Linux-PAM */
+		pamh = NULL;
+		exit(1);
+	}
+	exit(status);
+error:
+	pam_end(pamh, PAM_ABORT);
+	exit(1);
+#else
 	execl("/bin/su", "su", "-", user, "-c", realcmd, NULL);
 	perror("execl");
 	exit(1);
+#endif
+
 }
 
 void handle_just_exec(int len)

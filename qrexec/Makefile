@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS+=-I. -g -Wall -Wextra -Werror -pie -fPIC
 XENLIBS=-lvchan -lxenstore -lxenctrl
-LIBS=$(XENLIBS) -lqrexec-utils
+LIBS=$(XENLIBS) -lqrexec-utils -lpam
 
 all: qrexec-agent qrexec-client-vm
 qrexec-daemon: qrexec-daemon.o
@@ -22,4 +22,5 @@ install:
 	install qrexec-client-vm $(DESTDIR)/usr/lib/qubes
 	ln -s qrexec-client-vm $(DESTDIR)/usr/lib/qubes/qrexec_client_vm
 	install qubes-rpc-multiplexer $(DESTDIR)/usr/lib/qubes
+	install -D -m 0644 qrexec.pam $(DESTDIR)/etc/pam.d/qrexec
 
