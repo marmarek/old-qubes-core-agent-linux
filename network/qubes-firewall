@@ -6,6 +6,10 @@ XENSTORE_IPTABLES=qubes-iptables
 XENSTORE_IPTABLES_HEADER=qubes-iptables-header
 XENSTORE_ERROR=qubes-iptables-error
 OLD_RULES=""
+
+ipv6_flagfile=/var/run/qubes-service/qubes-ipv6
+ipv6_prefix="fd09:24ef:4179:0000::"
+
 # PIDfile handling
 [[ -e $PIDFILE ]] && kill -s 0 $(<$PIDFILE) 2>/dev/null && exit 0
 echo $$ >$PIDFILE
@@ -13,6 +17,14 @@ echo $$ >$PIDFILE
 trap 'exit 0' SIGTERM
 
 FIRST_TIME=yes
+
+convert_rules_ipv6() {
+    RULES_WORK="$1"
+    RULES_WORK="`echo "$RULES_WORK"  | sed -e "s/ -s 10\./ -s ${ipv6_prefix}10./g"`"
+    RULES_WORK="`echo "$RULES_WORK" | sed -e "s/ -d \(10\.13[78]\.\)/ -d ${ipv6_prefix}\1/g"`"
+    RULES_WORK="`echo "$RULES_WORK" | sed -e "s/\<icmp-host-prohibited\>/adm-prohibited/g"`"
+    echo "$RULES_WORK"
+}
 
 while true; do
 
@@ -37,13 +49,27 @@ while true; do
 	RULES=$(xenstore-read $XENSTORE_IPTABLES_HEADER)
 	IPTABLES_SAVE=$(iptables-save | sed '/^\*filter/,/^COMMIT/d')
 	OUT=`echo -e "$RULES\n$IPTABLES_SAVE" | iptables-restore 2>&1 || true`
+	if [ -e "$ipv6_flagfile" ]; then
+		RULES6=`convert_rules_ipv6 "$RULES"`
+		IP6TABLES_SAVE=$(ip6tables-save | sed '/^\*filter/,/^COMMIT/d')
+		ERRS=`echo -e "$RULES6\n$IP6TABLES_SAVE" | ip6tables-restore 2>&1 || true`
+		OUT="$OUT$ERRS"
+	fi
 
 	for i in $(xenstore-list qubes-iptables-domainrules) ; do
 		RULES=$(xenstore-read qubes-iptables-domainrules/"$i")
 		ERRS=`echo -e "$RULES" | /sbin/iptables-restore -n 2>&1 || true`
 		if [ -n "$ERRS" ]; then
-			echo "Failed applying rules for $i: $ERRS" >&2
+			echo "Failed applying ipv4 rules for $i: $ERRS" >&2
 			OUT="$OUT$ERRS"
+		fi
+		if [ -e "$ipv6_flagfile" ]; then
+			RULES6=`convert_rules_ipv6 "$RULES"`
+			ERRS=`echo -e "$RULES6" | /sbin/ip6tables-restore -n 2>&1 || true`
+			if [ -n "$ERRS" ]; then
+				echo "Failed applying ipv6 rules for $i: $ERRS" >&2
+				OUT="$OUT$ERRS"
+			fi
 		fi
 	done		
 	xenstore-write $XENSTORE_ERROR "$OUT"

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+ipv6_flagfile=/var/run/qubes-service/qubes-ipv6
+ipv6_prefix="fd09:24ef:4179:0000::"
+
 if [ -x /usr/sbin/xenstore-read ]; then
 	XENSTORE_READ="/usr/sbin/xenstore-read"
 else
@@ -12,6 +15,9 @@ if [ x$ip != x ]; then
     gateway=`$XENSTORE_READ qubes-gateway`
     secondary_dns=`$XENSTORE_READ qubes-secondary-dns`
     /sbin/ifconfig $INTERFACE $ip netmask 255.255.255.255
+    if [ -e "$ipv6_flagfile" ]; then
+        /sbin/ip addr add "$ipv6_prefix$ip/128" dev $INTERFACE
+    fi
     /sbin/ifconfig $INTERFACE up
     /sbin/route add -host $gateway dev $INTERFACE
     if [ -f /var/run/qubes-service/set-default-route ]; then
@@ -38,9 +44,6 @@ id=VM uplink $INTERFACE
 uuid=de85f79b-8c3d-405f-a652-cb4c10b4f9ef
 type=802-3-ethernet
 
-[ipv6]
-method=ignore
-
 [ipv4]
 method=manual
 may-fail=false
@@ -52,6 +55,22 @@ __EOF__
             echo "address1=$ip/32,$gateway" >> $nm_config
         else
             echo "address1=$ip/32" >> $nm_config
+        fi
+        if [ -e "$ipv6_flagfile" ]; then
+            cat >> $nm_config <<__EOF__
+[ipv6]
+method=manual
+__EOF__
+        if [ -f /var/run/qubes-service/set-default-route ]; then
+            echo "address1=fd09:24ef:4179:0000::$ip/128,fe80::fcff:ffff:feff:ffff" >> $nm_config
+        else
+            echo "address1=fd09:24ef:4179:0000::$ip/128" >> $nm_config
+        fi
+        else
+            cat >> $nm_config <<__EOF__
+[ipv6]
+method=ignore
+__EOF__
         fi
         chmod 600 $nm_config
     fi

@@ -23,6 +23,8 @@
 dir=$(dirname "$0")
 . "$dir/vif-common.sh"
 
+ipv6_prefix=fd09:24ef:4179:0000::
+ipv6_flagfile=/var/run/qubes-service/qubes-ipv6
 #main_ip=$(dom0_ip)
 
 case "$command" in
@@ -48,12 +50,16 @@ domid=${domid/.*/}
 metric=$[ 32752 - $domid ]
 
 if [ "${ip}" ] ; then
-	# If we've been given a list of IP addresses, then add routes from dom0 to
+	# If we've been given a list of IP addresses, then add routes to
 	# the guest using those addresses.
 	for addr in ${ip} ; do
 		${cmdprefix} ip route ${ipcmd} ${addr} dev ${vif} metric $metric
+		if [ -e "$ipv6_flagfile" ]; then
+			${cmdprefix} ip -6 route ${ipcmd} ${ipv6_prefix}${ip} dev ${vif} metric $metric
+		fi
 	done
 	${cmdprefix} iptables -t raw $iptables_cmd -i ${vif} \! -s ${ip} -j DROP
+	${cmdprefix} ip6tables -t raw $iptables_cmd -i ${vif} \! -s ${ipv6_prefix}${ip} -j DROP
 	back_ip=`xenstore-read qubes-netvm-gateway`
 	${cmdprefix} ip addr ${ipcmd} ${back_ip}/32 dev ${vif}
 fi
