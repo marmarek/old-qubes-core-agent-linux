@@ -1,3 +1,10 @@
+qubes-core-agent (2.1.60-1) wheezy; urgency=medium
+
+  * whonix:  Added protected-files file used to prevent scripts from
+    modifying files that need to be protected
+
+ -- Jason Mehring <nrgaway@gmail.com>  Wed, 22 Apr 2015 00:02:24 -0400
+
 qubes-core-agent (2.1.59) wheezy; urgency=medium
 
   * systemd: disable avahi-daemon and dnf-makecache
