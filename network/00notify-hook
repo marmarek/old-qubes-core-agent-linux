@@ -1,1 +1,2 @@
-DPkg::Post-Invoke {"/usr/lib/qubes/qrexec-client-vm dom0 qubes.NotifyUpdates /bin/sh -c 'echo 0' || true";};
+# https://github.com/QubesOS/qubes-issues/issues/1066
+#DPkg::Post-Invoke {"/usr/lib/qubes/qrexec-client-vm dom0 qubes.NotifyUpdates /bin/sh -c 'echo 0' || true";};
