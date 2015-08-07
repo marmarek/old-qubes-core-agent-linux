@@ -39,6 +39,16 @@ if [ "$1" = "install" ] ; then
     # --------------------------------------------------------------------------
     groupadd --force --system --gid 98 qubes
     groupadd --force --system sudo
+    
+    ## Fix static gid issue for in place template upgrades.
+    ## https://github.com/QubesOS/qubes-issues/issues/1105
+    if grep -q ^qubes:x:98: /etc/group ; then
+        if ! grep -q :980: /etc/group ; then
+            if groupmod -g 980 qubes ; then
+                find / -gid 98 ! -type l -exec chgrp --verbose qubes {} \; 2>/dev/null || true
+            fi
+        fi
+    fi
 
     # --------------------------------------------------------------------------
     # User add / modifications
