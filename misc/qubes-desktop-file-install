@@ -88,7 +88,7 @@ from collections import OrderedDict
 import xdg.DesktopEntry
 
 __all__ = []
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 # This is almost always a good thing to do at the beginning of your programs.
 locale.setlocale(locale.LC_ALL, '')
@@ -223,6 +223,10 @@ def add_value(entry, key, value):
 def remove_value(entry, key, value):
     '''Remove a value to a desktop-file entry object.
     '''
+    # Handle old value; X-QUBES will also attempt to remove QUBES
+    if value.startswith('X-'):
+        remove_value(entry, key, value[2:])
+    
     value = unicode(value)
     entry_values = entry.get(key, list=True)
     if value in entry_values:
