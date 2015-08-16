@@ -94,7 +94,7 @@ __version__ = '1.0.0'
 locale.setlocale(locale.LC_ALL, '')
 
 # Default Qubes directory that modified desktop entry config files are stored in
-QUBES_XDG_CONFIG_DIR = '/vat/lib/qubes/xdg'
+QUBES_XDG_CONFIG_DIR = '/var/lib/qubes/xdg'
 
 
 class DesktopEntry(xdg.DesktopEntry.DesktopEntry):
