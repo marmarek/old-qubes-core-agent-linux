@@ -1,0 +1,32 @@
+#!/bin/bash -e
+# vim: set ts=4 sw=4 sts=4 et :
+
+#
+# qubes-triggers
+#
+################################################################################
+# This trigger script calls all the *.trigger scripts in the
+# /etc/qubes/triggers.d directory and passes all argv arguments.
+#
+# Each trigger is responsible to filter out its own trigger args.
+#
+# Example usage:
+#
+#     A package manager wanting to trigger specific triggers for files being
+#     installed/removed in the /usr/share/applications directory.  The package
+#     manager would call:
+#
+#         /usr/lib/qubes/qubes-triggers /etc/share/applications
+#
+#     Then all triggers would be called with the /etc/share/applications arg.
+#     Any interested triggers would then execute, while others would ignore.
+
+TRIGGER_DIR="/etc/qubes/triggers.d"
+TRIGGER_EXT=".trigger"
+
+# ==============================================================================
+# Execute all triggers in /etc/qubes/triggers directory
+# ==============================================================================
+for trigger in "${TRIGGER_DIR}"/*"${TRIGGER_EXT}"; do
+    "${trigger}" triggered "${@}"
+done

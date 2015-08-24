@@ -130,7 +130,6 @@ install-common:
 	install -m 0644 misc/udev-qubes-misc.rules $(DESTDIR)/etc/udev/rules.d/50-qubes-misc.rules
 	install -d $(DESTDIR)$(LIBDIR)/qubes/
 	install misc/vusb-ctl.py $(DESTDIR)$(LIBDIR)/qubes/
-	install misc/qubes-trigger-sync-appmenus.sh $(DESTDIR)$(LIBDIR)/qubes/
 	install -D misc/polkit-1-qubes-allow-all.pkla $(DESTDIR)/etc/polkit-1/localauthority/50-local.d/qubes-allow-all.pkla
 	install -D misc/polkit-1-qubes-allow-all.rules $(DESTDIR)/etc/polkit-1/rules.d/00-qubes-allow-all.rules
 	install -D -m 0644 misc/mime-globs $(DESTDIR)/usr/share/qubes/mime-override/globs
@@ -170,7 +169,12 @@ install-common:
 
 	install -d $(DESTDIR)/usr/bin
 	install -m 0755 misc/qubes-desktop-file-install $(DESTDIR)/usr/bin/qubes-desktop-file-install
-	install -m 0755 misc/qubes-trigger-desktop-file-install $(DESTDIR)$(LIBDIR)/qubes/qubes-trigger-desktop-file-install
+	install -m 0755 misc/qubes-triggers $(DESTDIR)$(LIBDIR)/qubes/qubes-triggers
+	install -d $(DESTDIR)/etc/qubes/triggers.d
+	install -m 0644 misc/qubes-triggers.sh $(DESTDIR)/etc/qubes/triggers.d/qubes-triggers.sh
+	install -m 0644 misc/qubes-trigger-desktop-file-install.sh $(DESTDIR)/etc/qubes/triggers.d/qubes-trigger-desktop-file-install.sh
+	install -m 0755 misc/qubes-trigger-desktop-file-install.trigger $(DESTDIR)/etc/qubes/triggers.d/qubes-trigger-desktop-file-install.trigger
+	install -m 0755 misc/qubes-trigger-sync-appmenus.trigger $(DESTDIR)/etc/qubes/triggers.d/qubes-trigger-sync-appmenus.trigger
 
 	install qubes-rpc/{qvm-open-in-dvm,qvm-open-in-vm,qvm-copy-to-vm,qvm-move-to-vm,qvm-run,qvm-mru-entry} $(DESTDIR)/usr/bin
 	install qubes-rpc/wrap-in-html-if-url.sh $(DESTDIR)$(LIBDIR)/qubes
