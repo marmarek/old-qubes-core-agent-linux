@@ -141,12 +141,11 @@ case "${1}" in
             dpkg-statoverride --update --add user user 775 /var/lib/qubes/dom0-updates
         fi
 
+        # Update all xdg autostart desktop entries
+        /etc/qubes/triggers.d/qubes-trigger-desktop-file-install.trigger configure || true
+
         # Update Qubes App Menus"
-        /usr/lib/qubes/qubes-trigger-sync-appmenus.sh || true
-
-        ## Update all xdg autostart desktop entries
-        /usr/lib/qubes/qubes-trigger-desktop-file-install clean || true
-
+        /usr/lib/qubes/qubes-triggers || true
         ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
@@ -156,25 +155,16 @@ case "${1}" in
     triggered)
         for trigger in ${2}; do
             case "${trigger}" in
-
-                /usr/share/applications)
-                    debug "Updating Qubes App Menus..."
-                    /usr/lib/qubes/qubes-trigger-sync-appmenus.sh || true
-            
-                    debug "Updating XDG Config..."
-                    /usr/lib/qubes/qubes-trigger-desktop-file-install || true
-                    ;;
-
+                # Install .desktop file overrides and sync appmenus
+                /usr/share/applications | \
                 /etc/xdg)
-                    debug "Updating XDG Config..."
-                    /usr/lib/qubes/qubes-trigger-desktop-file-install || true
+                    /usr/lib/qubes/qubes-triggers ${trigger} sync-appmenus || true
                     ;;
 
                 # Install overridden serial.conf init script 
                 /etc/init/serial.conf)
                     installSerialConf
                     ;;
-
             esac
         done
         exit 0

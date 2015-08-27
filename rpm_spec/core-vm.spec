@@ -161,7 +161,7 @@ done
 
 # Update all autostart xdg desktop configuration files (modified copies are
 # placed in /var/lib/qubes/xdg/autostart)
-/usr/lib/qubes/qubes-trigger-desktop-file-install clean
+/etc/qubes/triggers.d/qubes-trigger-desktop-file-install.trigger configure
 
 # Create NetworkManager configuration if we do not have it
 if ! [ -e /etc/NetworkManager/NetworkManager.conf ]; then
@@ -357,6 +357,7 @@ rm -f %{name}-%{version}
 %config(noreplace) /etc/qubes-rpc/qubes.GetImageRGBA
 %config(noreplace) /etc/qubes-rpc/qubes.SetDateTime
 %config(noreplace) /etc/sudoers.d/qubes
+%config(noreplace) /etc/sudoers.d/qt_x11_no_mitshm
 %config(noreplace) /etc/sysconfig/iptables.qubes
 %config(noreplace) /etc/sysconfig/ip6tables.qubes
 /usr/lib/qubes/init/iptables
@@ -403,7 +404,12 @@ rm -f %{name}-%{version}
 /usr/lib/qubes/qubes-download-dom0-updates.sh
 /usr/lib/qubes/qubes-fix-nm-conf.sh
 /usr/lib/qubes/qubes-setup-dnat-to-ns
-/usr/lib/qubes/qubes-trigger-sync-appmenus.sh
+/usr/lib/qubes/qubes-triggers
+%dir /etc/qubes/triggers.d
+/etc/qubes/triggers.d/qubes-triggers.sh
+/etc/qubes/triggers.d/qubes-trigger-desktop-file-install.sh
+/etc/qubes/triggers.d/qubes-trigger-desktop-file-install.trigger
+/etc/qubes/triggers.d/qubes-trigger-sync-appmenus.trigger
 /usr/lib/qubes/qvm-copy-to-vm.gnome
 /usr/lib/qubes/qvm-copy-to-vm.kde
 /usr/lib/qubes/qvm-move-to-vm.gnome
@@ -414,7 +420,6 @@ rm -f %{name}-%{version}
 /usr/lib/qubes/wrap-in-html-if-url.sh
 /usr/lib/qubes/iptables-updates-proxy
 /usr/lib/qubes/close-window
-/usr/lib/qubes/qubes-trigger-desktop-file-install
 /usr/lib/yum-plugins/yum-qubes-hooks.py*
 /usr/sbin/qubes-firewall
 /usr/sbin/qubes-netwatcher

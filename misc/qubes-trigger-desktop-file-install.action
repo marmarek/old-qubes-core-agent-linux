@@ -1,1 +1,1 @@
-*:any:/usr/lib/qubes/qubes-trigger-desktop-file-install
+*:any:/usr/lib/qubes/qubes-triggers /usr/share/applications
