@@ -1,5 +1,6 @@
 [Unit]
 Description=Qubes base firewall settings
+ConditionPathExists=!/usr/lib/qubes-whonix
 
 [Service]
 Type=oneshot
