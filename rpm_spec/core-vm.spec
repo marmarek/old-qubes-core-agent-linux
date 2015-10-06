@@ -198,7 +198,7 @@ EOF
     fi
 fi
 
-# Make sure that /etc/sysconfig/ip(|6)tables exists. Otherwise iptales.service
+# Make sure that /etc/sysconfig/ip(|6)tables exists. Otherwise iptables.service
 # would not start (even when configured to use another configuration file.
 if [ ! -e '/etc/sysconfig/iptables' ]; then
   ln -s iptables.qubes /etc/sysconfig/iptables
