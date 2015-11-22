@@ -1,10 +1,10 @@
 #!/bin/sh
 
 # List of services enabled by default (in case of absence of qubesdb entry)
-DEFAULT_ENABLED_NETVM="network-manager qubes-network qubes-update-check qubes-updates-proxy"
-DEFAULT_ENABLED_PROXYVM="meminfo-writer qubes-network qubes-firewall qubes-netwatcher qubes-update-check"
-DEFAULT_ENABLED_APPVM="meminfo-writer cups qubes-update-check"
-DEFAULT_ENABLED_TEMPLATEVM="$DEFAULT_ENABLED_APPVM updates-proxy-setup"
+DEFAULT_ENABLED_NETVM="netvm network-manager qubes-network qubes-update-check qubes-updates-proxy"
+DEFAULT_ENABLED_PROXYVM="proxyvm meminfo-writer qubes-network qubes-firewall qubes-netwatcher qubes-update-check"
+DEFAULT_ENABLED_APPVM="appvm meminfo-writer cups qubes-update-check"
+DEFAULT_ENABLED_TEMPLATEVM="templatevm meminfo-writer cups qubes-update-check updates-proxy-setup"
 DEFAULT_ENABLED="meminfo-writer"
 
 QDB_READ=qubesdb-read
