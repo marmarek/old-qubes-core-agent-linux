@@ -121,6 +121,7 @@ if [ -e /etc/PackageKit/PackageKit.conf ]; then
 fi
 
 # Pacman (archlinux) also
+# https://bugs.archlinux.org/task/50018
 if [ -e /etc/pacman.conf ]; then
     update_conf /etc/pacman.conf "XferCommand = http_proxy=$PROXY_ADDR /usr/bin/curl -C - -f %u > %o"
 fi
