@@ -9,6 +9,12 @@ disabledns=`qubesdb-read /qubes-service/disable-dns-server 2> /dev/null`
 # Location of files which contains list of protected files
 PROTECTED_FILE_LIST='/etc/qubes/protected-files.d'
 
+if ! [ -e /sys/class/net/$INTERFACE ]; then
+    # silently ignore non-existing interfaces
+    # if interface will be added later, udev rule will call this script again
+    exit 0
+fi
+
 ip=`/usr/bin/qubesdb-read /qubes-ip 2> /dev/null`
 if [ x$ip != x ]; then
     netmask=`/usr/bin/qubesdb-read /qubes-netmask`

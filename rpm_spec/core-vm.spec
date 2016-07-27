@@ -548,6 +548,7 @@ The Qubes core startup configuration for SystemD init.
 /lib/systemd/system/qubes-netwatcher.service
 /lib/systemd/system/qubes-network.service
 /lib/systemd/system/qubes-iptables.service
+/lib/systemd/system/qubes-setup-ip.service
 /lib/systemd/system/qubes-sysinit.service
 /lib/systemd/system/qubes-update-check.service
 /lib/systemd/system/qubes-update-check.timer
@@ -595,6 +596,7 @@ else
     services="qubes-dvm qubes-misc-post qubes-firewall qubes-mount-dirs"
     services="$services qubes-netwatcher qubes-network qubes-sysinit"
     services="$services qubes-iptables qubes-updates-proxy qubes-qrexec-agent"
+    services="$services qubes-setup-ip"
     for srv in $services; do
         /bin/systemctl --no-reload preset $srv.service
     done

@@ -1,0 +1,13 @@
+[Unit]
+Description=Setup network interface based on Qubes VM settings
+After=network-pre.target
+Before=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=INTERFACE=eth0
+ExecStart=/usr/lib/qubes/setup-ip
+
+[Install]
+WantedBy=network.target
