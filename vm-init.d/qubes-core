@@ -4,9 +4,11 @@
 # description: Executes supplementary Qubes core scripts at VM boot
 #
 # Source function library.
+# shellcheck disable=SC1091
 . /etc/rc.d/init.d/functions
 
 # Source Qubes library.
+# shellcheck source=init/functions
 . /usr/lib/qubes/init/functions
 
 start()
@@ -35,6 +37,7 @@ start()
 	fi
 
 	echo -n $"Executing Qubes misc post scripts:"
+    # shellcheck disable=SC2015
 	/usr/lib/qubes/init/misc-post.sh && success || failure
 	echo
 }
@@ -59,4 +62,5 @@ case "$1" in
 	;;
 esac
 
+# shellcheck disable=SC2086
 exit $RETVAL

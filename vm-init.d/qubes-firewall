@@ -4,9 +4,11 @@
 # description: Starts Qubes Firewall monitor
 #
 # Source function library.
+# shellcheck disable=SC1091
 . /etc/rc.d/init.d/functions
 
 # Source Qubes library.
+# shellcheck source=init/functions
 . /usr/lib/qubes/init/functions
 
 PIDFILE=/var/run/qubes/qubes-firewall.pid
@@ -28,7 +30,8 @@ stop()
 {
     if [ -r $PIDFILE ]; then
         echo -n "Stopping Qubes Firewall monitor:"
-        kill -9 $(cat $PIDFILE) 2>/dev/null && success || failure
+        # shellcheck disable=SC2015
+        kill -9 "$(cat "$PIDFILE")" 2>/dev/null && success || failure
         echo ""
     fi
 	return 0
@@ -47,4 +50,5 @@ case "$1" in
 	;;
 esac
 
+# shellcheck disable=SC2086
 exit $RETVAL

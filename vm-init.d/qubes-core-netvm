@@ -4,9 +4,11 @@
 # description: Executes Qubes core scripts at NetVM boot
 #
 # Source function library.
+# shellcheck disable=SC1091
 . /etc/rc.d/init.d/functions
 
 # Source Qubes library.
+# shellcheck source=init/functions
 . /usr/lib/qubes/init/functions
 
 start()
@@ -19,6 +21,7 @@ start()
 	fi
 
 	echo -n $"Executing Qubes Core scripts NetVM:"
+    # shellcheck disable=SC2015
 	/usr/lib/qubes/init/network-proxy-setup && success || failure
 	echo
 }
@@ -41,4 +44,5 @@ case "$1" in
 	;;
 esac
 
+# shellcheck disable=SC2086
 exit $RETVAL

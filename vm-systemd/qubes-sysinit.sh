@@ -1,41 +1,15 @@
 #!/bin/bash
 
 # Source Qubes library.
+# shellcheck source=init/functions
 . /usr/lib/qubes/init/functions
 
 # List of services enabled by default (in case of absence of qubesdb entry)
-DEFAULT_ENABLED_NETVM="network-manager qubes-network qubes-update-check qubes-updates-proxy"
-DEFAULT_ENABLED_PROXYVM="qubes-network qubes-firewall qubes-update-check"
-DEFAULT_ENABLED_APPVM="cups qubes-update-check"
+DEFAULT_ENABLED_NETVM="network-manager qubes-network qubes-update-check qubes-updates-proxy meminfo-writer qubes-firewall"
+DEFAULT_ENABLED_PROXYVM="qubes-network qubes-firewall qubes-update-check meminfo-writer"
+DEFAULT_ENABLED_APPVM="cups qubes-update-check meminfo-writer"
 DEFAULT_ENABLED_TEMPLATEVM="$DEFAULT_ENABLED_APPVM updates-proxy-setup"
-DEFAULT_ENABLED=""
-
-# devices emulated by qemu, first list of vendor IDs then list of device IDs:
-qemu_devices="0x8086
-0x8086
-0x8086
-0x8086
-0x8086
-0x5853
-0x1013
-0x1237
-0x7000
-0x7010
-0x7020
-0x7113
-0x0001
-0x00b8
-"
-if [ -z "$(ls /sys/bus/pci/devices/)" -o \
-        "$(cat /sys/bus/pci/devices/*/{vendor,device})" != "$qemu_devices" ]; then
-    # do not enable meminfo-writer (so qmemman for this domain) when any real PCI
-    # device is present
-    DEFAULT_ENABLED="$DEFAULT_ENABLED meminfo-writer"
-    DEFAULT_ENABLED_APPVM="$DEFAULT_ENABLED_APPVM meminfo-writer"
-    DEFAULT_ENABLED_PROXYVM="$DEFAULT_ENABLED_PROXYVM meminfo-writer"
-    DEFAULT_ENABLED_TEMPLATEVM="$DEFAULT_ENABLED_TEMPLATEVM meminfo-writer"
-fi
-
+DEFAULT_ENABLED="meminfo-writer"
 
 if systemd_version_changed ; then
     # Ensure we're running right version of systemd (the one started by initrd may be different)
@@ -43,7 +17,7 @@ if systemd_version_changed ; then
 fi
 
 # Wait for xenbus initialization
-while [ ! -e /dev/xen/xenbus -a ! -e /proc/xen/xenbus ]; do
+while [ ! -e /dev/xen/xenbus ] && [ -e /proc/xen/xenbus ]; do
   sleep 0.1
 done
 
@@ -74,24 +48,24 @@ is_templatevm && DEFAULT_ENABLED=$DEFAULT_ENABLED_TEMPLATEVM && touch /var/run/q
 
 # Enable default services
 for srv in $DEFAULT_ENABLED; do
-    touch /var/run/qubes-service/$srv
+    touch "/var/run/qubes-service/$srv"
 done
 
 # Enable services
-for srv in `qubesdb-multiread /qubes-service/ 2>/dev/null |grep ' = 1'|cut -f 1 -d ' '`; do
-    touch /var/run/qubes-service/$srv
+for srv in $(qubesdb-multiread /qubes-service/ 2>/dev/null |grep ' = 1'|cut -f 1 -d ' '); do
+    touch "/var/run/qubes-service/$srv"
 done
 
 # Disable services
-for srv in `qubesdb-multiread /qubes-service/ 2>/dev/null |grep ' = 0'|cut -f 1 -d ' '`; do
-    rm -f /var/run/qubes-service/$srv
+for srv in $(qubesdb-multiread /qubes-service/ 2>/dev/null |grep ' = 0'|cut -f 1 -d ' '); do
+    rm -f "/var/run/qubes-service/$srv"
 done
 
 # Prepare environment for other services
 echo > /var/run/qubes-service-environment
 
-debug_mode=`qubesdb-read /qubes-debug-mode 2> /dev/null`
-if [ -n "$debug_mode" -a "$debug_mode" -gt 0 ]; then
+debug_mode=$(qubesdb-read /qubes-debug-mode 2> /dev/null)
+if [ -n "$debug_mode" ] && [ "$debug_mode" -gt 0 ]; then
     echo "GUI_OPTS=-vv" >> /var/run/qubes-service-environment
 fi
 

@@ -5,11 +5,13 @@
 #
 
 # Source function library.
+# shellcheck disable=SC1091
 . /etc/rc.d/init.d/functions
 
 start()
 {
 	echo -n $"Executing Qubes system initialization scripts:"
+    # shellcheck disable=SC2015
 	/usr/lib/qubes/init/qubes-sysinit.sh && success || failure ; echo
 }
 
@@ -31,4 +33,5 @@ case "$1" in
 	;;
 esac
 
+# shellcheck disable=SC2086
 exit $RETVAL

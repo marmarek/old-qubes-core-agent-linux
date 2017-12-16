@@ -112,7 +112,6 @@ Group:		Qubes
 Vendor:		Invisible Things Lab
 License:	GPL
 URL:		http://www.qubes-os.org
-Requires:   fedora-release
 %if %{fedora} < 22
 Requires:   yum-plugin-post-transaction-actions
 %endif
@@ -145,6 +144,9 @@ Requires:   python3-dnf-plugins-qubes-hooks
 %else
 Requires:   python2-dnf-plugins-qubes-hooks
 %endif
+%if 0%{?rhel} >= 7
+Requires:   python34-dnf-plugins-qubes-hooks
+%endif
 Obsoletes:  qubes-core-vm-kernel-placeholder <= 1.0
 Obsoletes:  qubes-upgrade-vm < 3.2
 Provides:   qubes-core-vm = %{version}-%{release}
@@ -171,8 +173,9 @@ DNF plugin for Qubes specific post-installation actions:
  * notify dom0 that updates were installed
  * refresh applications shortcut list
 
+%if 0%{fedora} >= 23
 %package -n python3-dnf-plugins-qubes-hooks
-Summary:	DNF plugin for Qubes specific post-installation actions
+Summary:        DNF plugin for Qubes specific post-installation actions
 BuildRequires: python3-devel
 %{?python_provide:%python_provide python3-dnf-plugins-qubes-hooks}
 
@@ -180,6 +183,19 @@ BuildRequires: python3-devel
 DNF plugin for Qubes specific post-installation actions:
  * notify dom0 that updates were installed
  * refresh applications shortcut list
+%endif
+
+%if 0%{?rhel} >= 7
+%package -n python34-dnf-plugins-qubes-hooks
+Summary:        DNF plugin for Qubes specific post-installation actions
+BuildRequires: python34-devel
+%{?python_provide:%python_provide python34-dnf-plugins-qubes-hooks}
+
+%description -n python34-dnf-plugins-qubes-hooks
+DNF plugin for Qubes specific post-installation actions:
+ * notify dom0 that updates were installed
+ * refresh applications shortcut list
+%endif
 
 %package qrexec
 Summary:    Qubes qrexec agent
@@ -212,6 +228,7 @@ Scripts required to handle dom0 updates.
 %package networking
 Summary:    Networking support for Qubes VM
 Requires:   ethtool
+Requires:   iptables
 Requires:   net-tools
 Requires:   nftables
 Requires:   socat
@@ -251,6 +268,13 @@ Configure sudo, PolicyKit and similar tool to not ask for any password when
 switching from user to root. Since all the user data in a VM is accessible
 already from normal user account, there is not much more to guard there. Qubes
 VM is a single user system.
+
+%package thunar
+Summary: Thunar support for Qubes VM tools
+Requires: Thunar
+
+%description thunar
+Thunar support for Qubes VM tools
 
 %define _builddir %(pwd)
 
@@ -300,6 +324,13 @@ make install-vm DESTDIR=$RPM_BUILD_ROOT
 
 %if %{fedora} >= 22
 rm -f $RPM_BUILD_ROOT/etc/yum/post-actions/qubes-trigger-sync-appmenus.action
+%endif
+
+%if 0%{?rhel} >= 7
+sed -i \
+        -e 's:-primary:-centos:' \
+        -e 's:/fc:/centos:' \
+        $RPM_BUILD_ROOT/etc/yum.repos.d/qubes-*.repo
 %endif
 
 %triggerin -- initscripts
@@ -440,6 +471,22 @@ sed 's/^net.ipv4.ip_forward.*/#\0/'  -i /etc/sysctl.conf
 %post qrexec
 %systemd_post qubes-qrexec-agent.service
 
+%post thunar 
+if [ "$1" = 1 ]; then
+  # There is no system-wide Thunar custom actions. There is only a default
+  # file and a user file created from the default one. Qubes actions need
+  # to be placed after all already defined actions and before </actions>
+  # the end of file.
+  if [ -f /etc/xdg/Thunar/uca.xml ] ; then
+    cp -p /etc/xdg/Thunar/uca.xml{,.bak}
+    sed -i '$e cat /usr/lib/qubes/uca_qubes.xml' /etc/xdg/Thunar/uca.xml
+  fi
+  if [ -f /home/user/.config/Thunar/uca.xml ] ; then
+    cp -p /home/user/.config/Thunar/uca.xml{,.bak}
+    sed -i '$e cat /usr/lib/qubes/uca_qubes.xml' /home/user/.config/Thunar/uca.xml
+  fi
+fi
+
 %preun
 if [ "$1" = 0 ] ; then
     # no more packages left
@@ -460,6 +507,18 @@ fi
 
 %preun qrexec
 %systemd_preun qubes-qrexec-agent.service
+
+%postun thunar 
+if [ "$1" = 0 ]; then
+  if [ -f /etc/xdg/Thunar/uca.xml ] ; then
+    mv /etc/xdg/Thunar/uca.xml{,.uninstall}
+    mv /etc/xdg/Thunar/uca.xml{.bak,}
+  fi
+  if [ -f /home/user/.config/Thunar/uca.xml ] ; then
+    mv /home/user/.config/Thunar/uca.xml{,.uninstall}
+    mv /home/user/.config/Thunar/uca.xml{.bak,}
+  fi
+fi
 
 %postun
 if [ $1 -eq 0 ] ; then
@@ -553,6 +612,8 @@ rm -f %{name}-%{version}
 /usr/sbin/qubes-serial-login
 /usr/bin/qvm-copy-to-vm
 /usr/bin/qvm-move-to-vm
+/usr/bin/qvm-copy
+/usr/bin/qvm-move
 /usr/bin/qvm-open-in-dvm
 /usr/bin/qvm-open-in-vm
 /usr/bin/qvm-run-vm
@@ -579,6 +640,7 @@ rm -f %{name}-%{version}
 /usr/lib/qubes/upgrades-installed-check
 /usr/lib/qubes/upgrades-status-notify
 /usr/lib/qubes/qubes-sync-clock
+/usr/lib/qubes/resize-rootfs
 /usr/lib/yum-plugins/yum-qubes-hooks.py*
 /usr/lib/dracut/dracut.conf.d/30-qubes.conf
 %dir /usr/lib/qubes/init
@@ -591,6 +653,7 @@ rm -f %{name}-%{version}
 /usr/lib/qubes/init/qubes-early-vm-config.sh
 /usr/lib/qubes/init/qubes-random-seed.sh
 /usr/lib/qubes/init/qubes-sysinit.sh
+/usr/lib/qubes/init/resize-rootfs-if-needed.sh
 /usr/lib/qubes/init/setup-rw.sh
 /usr/lib/qubes/init/setup-rwdev.sh
 /usr/lib/qubes/init/functions
@@ -619,8 +682,15 @@ rm -f %{name}-%{version}
 %files -n python2-dnf-plugins-qubes-hooks
 %{python2_sitelib}/dnf-plugins/*
 
+%if 0%{fedora} >= 23
 %files -n python3-dnf-plugins-qubes-hooks
 %{python3_sitelib}/dnf-plugins/*
+%endif
+
+%if 0%{?rhel} >= 7
+%files -n python34-dnf-plugins-qubes-hooks
+%{python3_sitelib}/dnf-plugins/*
+%endif
 
 %files qrexec
 %config(noreplace) /etc/pam.d/qrexec
@@ -640,6 +710,11 @@ rm -f %{name}-%{version}
 /usr/share/nautilus-python/extensions/qvm_move_nautilus.py*
 /usr/share/nautilus-python/extensions/qvm_dvm_nautilus.py*
 
+%files thunar
+/usr/lib/qubes/qvm-actions.sh
+/usr/lib/qubes/uca_qubes.xml
+/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/thunar.xml
+
 %files dom0-updates
 %dir %attr(0775,user,user) /var/lib/qubes/dom0-updates
 /usr/lib/qubes/qubes-download-dom0-updates.sh
@@ -647,6 +722,7 @@ rm -f %{name}-%{version}
 %files networking
 %config(noreplace) /etc/qubes-rpc/qubes.UpdatesProxy
 %config(noreplace) /etc/qubes/ip6tables.rules
+%config(noreplace) /etc/qubes/ip6tables-enabled.rules
 %config(noreplace) /etc/qubes/iptables.rules
 %config(noreplace) /etc/tinyproxy/tinyproxy-updates.conf
 %config(noreplace) /etc/tinyproxy/updates-blacklist
@@ -771,6 +847,7 @@ The Qubes core startup configuration for SystemD init.
 %defattr(-,root,root,-)
 /lib/systemd/system/qubes-misc-post.service
 /lib/systemd/system/qubes-mount-dirs.service
+/lib/systemd/system/qubes-rootfs-resize.service
 /lib/systemd/system/qubes-sysinit.service
 /lib/systemd/system/qubes-early-vm-config.service
 /lib/systemd/system/qubes-update-check.service
@@ -786,6 +863,7 @@ The Qubes core startup configuration for SystemD init.
 /lib/systemd/system/cups.service.d/30_qubes.conf
 /lib/systemd/system/cups.socket.d/30_qubes.conf
 /lib/systemd/system/cups.path.d/30_qubes.conf
+/lib/systemd/system/cups-browsed.service.d/30_qubes.conf
 /lib/systemd/system/org.cups.cupsd.service.d/30_qubes.conf
 /lib/systemd/system/org.cups.cupsd.socket.d/30_qubes.conf
 /lib/systemd/system/org.cups.cupsd.path.d/30_qubes.conf

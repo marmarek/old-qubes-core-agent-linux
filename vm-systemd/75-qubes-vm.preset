@@ -55,6 +55,7 @@ disable plymouth-quit-wait.service
 disable smartd.service
 disable upower.service
 disable colord.service
+disable wpa_supplicant@.service
 
 # Fedora only services
 disable cpuspeed.service
@@ -85,6 +86,7 @@ enable qubes-updates-proxy.service
 enable qubes-network.service
 enable qubes-qrexec-agent.service
 enable qubes-mount-dirs.service
+enable qubes-rootfs-resize.service
 enable qubes-firewall.service
 enable qubes-meminfo-writer.service
 enable qubes-iptables.service
